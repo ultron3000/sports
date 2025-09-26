@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Live Sports Channels</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+  <style>
+    :root {
+      --primary: #1a365d;
+      --secondary: #2c5282;
+      --accent: #4299e1;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f4f8;
+      color: #2d3748;
+    }
+
+    .channel-card {
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .channel-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .channel-card.active {
+      border: 3px solid var(--accent);
+    }
+
+    .live-badge {
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .video-container {
+      aspect-ratio: 16/9;
+      background: linear-gradient(135deg, #1a365d, #2c5282);
+    }
+
+    .sport-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background-color: rgba(66, 153, 225, 0.2);
+    }
+
+    .category-btn.active {
+      background-color: var(--accent);
+      color: white;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="container mx-auto px-4 py-8">
+    <header class="mb-10 text-center">
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">Live Sports Channels</h1>
+      <p class="text-gray-600 max-w-2xl mx-auto">Watch your favorite sports live from around the world. Select a channel below to start streaming.</p>
+    </header>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+      <!-- Main Video Player -->
+      <div class="lg:w-2/3">
+        <div class="video-container rounded-xl overflow-hidden mb-6 relative">
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="text-center">
+              <i class="fas fa-play-circle text-6xl text-white opacity-50 mb-4"></i>
+              <p class="text-white font-medium">Select a channel to start watching</p>
+            </div>
+          </div>
+          <iframe
+            id="currentStream"
+            class="hidden w-full h-full"
+            allowfullscreen
+            frameborder="0"
+          ></iframe>
+        </div>
+
+        <div class="bg-white rounded-xl p-6 shadow-md">
+          <div class="flex items-center justify-between mb-4">
+            <h2 id="currentChannelTitle" class="text-xl font-bold text-gray-800">No channel selected</h2>
+            <span id="currentChannelLive" class="live-badge bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full hidden">LIVE</span>
+          </div>
+          <div id="currentChannelInfo" class="text-gray-600">Select a channel from the list to view details and start streaming.</div>
+          <div class="mt-4 flex items-center space-x-4">
+            <button id="volumeBtn" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
+              <i class="fas fa-volume-up text-gray-700"></i>
+            </button>
+            <button id="fullscreenBtn" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
+              <i class="fas fa-expand text-gray-700"></i>
+            </button>
+            <button id="favoriteBtn" class="p-2 rounded-full bg-gray-100 hover:bg-gray-200">
+              <i class="far fa-heart text-gray-700"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Channel List -->
+      <div class="lg:w-1/3">
+        <div class="bg-white rounded-xl shadow-md p-6">
+          <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+            <button class="category-btn active px-4 py-2 rounded-full text-sm font-medium" data-category="all">All Sports</button>
+            <button class="category-btn px-4 py-2 rounded-full text-sm font-medium" data-category="football">Football</button>
+            <button class="category-btn px-4 py-2 rounded-full text-sm font-medium" data-category="basketball">Basketball</button>
+            <button class="category-btn px-4 py-2 rounded-full text-sm font-medium" data-category="tennis">Tennis</button>
+            <button class="category-btn px-4 py-2 rounded-full text-sm font-medium" data-category="motorsports">Motorsports</button>
+            <button class="category-btn px-4 py-2 rounded-full text-sm font-medium" data-category="cricket">Cricket</button>
+          </div>
+
+          <div class="space-y-4" id="channelsContainer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sportsChannels = [
+      {
+        id: 1,
+        name: "Sony Sports 1",
+        category: "cricket",
+        description: "Live cricket action from across the globe.",
+        isLive: true,
+        logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVjDTXq-_cCgYr7x72KFivpdp-U9YFTwdf9g&s",
+        streamUrl: "https://allottplay.com/tv/toffee/live.php?id=sony_sports_1_hd",
+        sportIcon: "fa-cricket"
+      },
+      {
+        id: 2,
+        name: "Sony Sports 5",
+        category: "cricket",
+        description: "Coverage of major cricket tournaments and live shows.",
+        isLive: true,
+        logo: "https://www.sonypicturesnetworks.com/images/logos/SONY_SportsTen5_HD_Logo_CLR.png",
+        streamUrl: "https://allottplay.com/tv/toffee/live.php?id=sony_sports_5_hd",
+        sportIcon: "fa-cricket"
+      },
+      {
+        id: 3,
+        name: "Willow XTRA",
+        category: "cricket",
+        description: "Exclusive T20 leagues and test cricket coverage.",
+        isLive: true,
+        logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcG_dlntgSehdJUsXxCMkIPVq6FZViCQ5zij2mffUifgN-SOacL-q6PukpKzzgFG0EVvw&usqp=CAU",
+        streamUrl: "https://fl7.moveonjoy.com/WILLOW_CRICKET/index.m3u8",
+        sportIcon: "fa-cricket"
+      },
+      {
+        id: 4,
+        name: "Star Sports 1 HD",
+        category: "cricket",
+        description: "India’s premium cricket broadcaster. IPL and more.",
+        isLive: true,
+        logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Star_Sports_1_HD.png/1200px-Star_Sports_1_HD.png",
+        streamUrl: "https://wasitv-pro.site/crichd/master.m3u8/?c=star1in&key=WASITV",
+        sportIcon: "fa-cricket"
+      },
+      {
+        id: 5,
+        name: "DD Sports",
+        category: "cricket",
+        description: "Live Indian cricket, Olympics and national sports.",
+        isLive: true,
+        logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHynPtyXA-dup5a4EO5K31U_4dXjf09Iyqf-glKNTtAZ3Dtswg9r3FEnC-9klahNTXYRY&usqp=CAU",
+        streamUrl: "https://cdn-7.pishow.tv/live/1161/1161_3.m3u8",
+        sportIcon: "fa-cricket"
+      },
+      {
+        id: 6,
+        name: "Ten Cricket",
+        category: "cricket",
+        description: "International matches and analysis shows.",
+        isLive: true,
+        logo: "https://upload.wikimedia.org/wikipedia/en/thumb/d/da/Ten_Cricket.svg/800px-Ten_Cricket.svg.png",
+        streamUrl: "https://allottplay.com/tv/toffee/live.php?id=ten_cricket",
+        sportIcon: "fa-cricket"
+      },
+      {
+        id: 7,
+        name: "Ten Sports HD",
+        category: "cricket",
+        description: "Asia Cup, international cricket and more.",
+        isLive: true,
+        logo: "https://iconape.com/wp-content/files/da/323865/svg/323865.svg",
+        streamUrl: "https://wasitv-pro.site/crichd/master.m3u8/?c=tenspk&key=WASITV",
+        sportIcon: "fa-cricket"
+      },
+      {
+        id: 8,
+        name: "Sky Sports Cricket",
+        category: "cricket",
+        description: "The Ashes, World Cup and more UK-based cricket.",
+        isLive: true,
+        logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsvdclX7KrynjQ1-VOHm3S3RCZzTayQnYE2w&s",
+        streamUrl: "https://wasitv-pro.site/crichd/master.m3u8/?c=skyscric&key=WASITV",
+        sportIcon: "fa-cricket"
+      },
+      {
+        id: 9,
+        name: "A Sports HD",
+        category: "cricket",
+        description: "HD channel. Live tours.",
+        isLive: true,
+        logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDuSnhZM781OL5Yl9KapyIuEe_z8fNQrdqmw&s",
+        streamUrl: "https://wasitv-pro.site/crichd/master.m3u8/?c=asportshd&key=WASITV",
+        sportIcon: "fa-cricket"
+      }
+    ];
+
+    const channelsContainer = document.getElementById("channelsContainer");
+    const currentStream = document.getElementById("currentStream");
+    const currentTitle = document.getElementById("currentChannelTitle");
+    const currentInfo = document.getElementById("currentChannelInfo");
+    const currentLive = document.getElementById("currentChannelLive");
+    const favoriteBtn = document.getElementById("favoriteBtn");
+
+    let selectedChannelId = null;
+
+    function renderChannels(filter = "all") {
+      channelsContainer.innerHTML = "";
+      sportsChannels.filter(ch => filter === "all" || ch.category === filter).forEach(channel => {
+        const card = document.createElement("div");
+        card.className = `channel-card p-4 bg-white flex items-center cursor-pointer border ${selectedChannelId === channel.id ? "active" : ""}`;
+        card.innerHTML = `
+          <img src="${channel.logo}" alt="${channel.name}" class="w-12 h-12 object-contain mr-4"/>
+          <div>
+            <h3 class="font-bold text-gray-800">${channel.name}</h3>
+            <p class="text-sm text-gray-600">${channel.description}</p>
+          </div>
+          ${channel.isLive ? '<span class="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full live-badge">LIVE</span>' : ''}
+        `;
+        card.onclick = () => {
+          selectedChannelId = channel.id;
+          currentStream.src = channel.streamUrl;
+          currentStream.classList.remove("hidden");
+          currentTitle.textContent = channel.name;
+          currentInfo.textContent = channel.description;
+          currentLive.classList.toggle("hidden", !channel.isLive);
+          renderChannels(filter);
+        };
+        channelsContainer.appendChild(card);
+      });
+    }
+
+    renderChannels();
+
+    document.querySelectorAll(".category-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".category-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderChannels(btn.dataset.category);
+      });
+    });
+
+    // Placeholder icons for volume/favorite/fullscreen
+    document.getElementById("volumeBtn").addEventListener("click", () => alert("Volume control not implemented"));
+    document.getElementById("fullscreenBtn").addEventListener("click", () => alert("Fullscreen simulated"));
+    favoriteBtn.addEventListener("click", () => {
+      favoriteBtn.classList.toggle("bg-red-100");
+      favoriteBtn.querySelector("i").classList.toggle("fa-heart");
+      favoriteBtn.querySelector("i").classList.toggle("far");
+      favoriteBtn.querySelector("i").classList.toggle("fas");
+    });
+  </script>
+</body>
+</html>
