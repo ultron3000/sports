@@ -53,4 +53,65 @@ async function initPlayer() {
       const match = data.find(i => i.id === id);
       if (match) {
         if (match.mpd) videoUrl = match.mpd;
-        if (mat
+        if (match.m3u8) videoUrl = match.m3u8;
+        if (match.key) [keyId, key] = match.key.split(':');
+      }
+    }
+
+    if (!videoUrl) {
+      alert("No video URL found");
+      return;
+    }
+
+    // 2️⃣ Apply DRM key if available
+    if (keyId && key) {
+      player.configure({
+        drm: { clearKeys: { [keyId]: key } }
+      });
+    }
+
+    console.log('Attempting to load:', videoUrl);
+
+    // 3️⃣ Detect format
+    if (videoUrl.endsWith('.m3u8')) {
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = videoUrl;
+      } else {
+        await player.load(videoUrl);
+      }
+    } else if (videoUrl.endsWith('.mpd')) {
+      await player.load(videoUrl);
+    } else {
+      // fallback: attempt load via shaka
+      await player.load(videoUrl);
+    }
+
+    // 4️⃣ Try autoplay
+    try {
+      video.muted = true;
+      await video.play();
+    } catch {
+      manualPlay.style.display = 'block';
+    }
+
+  } catch (err) {
+    console.error('Playback failed:', err);
+    manualPlay.style.display = 'block';
+  }
+
+  // Manual play handler
+  manualPlay.addEventListener('click', async () => {
+    try {
+      video.muted = false;
+      await video.play();
+      manualPlay.style.display = 'none';
+    } catch (e) {
+      console.error('Manual play error:', e);
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initPlayer);
+</script>
+</body>
+</html>
