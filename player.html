@@ -3,98 +3,109 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TV4WAP Player</title>
+<title>TV4WAP Live Player</title>
 
-<!-- DASH.js for MPD -->
-<script src="https://cdn.jsdelivr.net/npm/dashjs@4.7.3/dist/dash.all.min.js"></script>
-
-<!-- HLS.js for M3U8 -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<!-- Shaka Player -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
 
 <style>
-  body {
-    margin: 0;
-    background: #000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+  html, body {
+    margin: 0; padding: 0; height: 100%; width: 100%;
+    background: #000; overflow: hidden;
   }
-  video {
-    width: 100%;
-    height: 100%;
-    background-color: black;
-    outline: none;
+  .shaka-video-container { width: 100%; height: 100%; position: absolute; }
+  video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+  #manualPlayButton {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 0, 0, 0.8);
+    color: #fff; padding: 15px 25px;
+    border-radius: 8px; cursor: pointer;
+    font-size: 18px; display: none;
+  }
+  #myLogo {
+    width: 60px; height: 40px;
+    position: absolute; right: 10px; top: 10px;
+    z-index: 1000;
   }
 </style>
 </head>
-<body>
 
-<video id="videoPlayer" controls autoplay playsinline></video>
+<body>
+  <div class="shaka-video-container youtube-theme">
+    <video autoplay muted playsinline></video>
+    <img id="myLogo" src="https://blogger.googleusercontent.com/img/a/AVvXsEiQ92h-ekVYskxW9qCgLvpQVMpAs4tqUQXnH9nDi37JW5B95V7Cq2Rz_mlGO68vTZmA2H5Qp4p8B0I9EUlW-6W1aVOZgITWN3xyE65Hd6G5G_D6HJFxiuXJaK-wMfYD0PiiUR9EBodkzuPH0-ubAMJQK_3F3rpDMEIJKCxlEzNZucpRzsumlBFXWqinGOw=s885">
+    <div id="manualPlayButton">▶ Tap to Play</div>
+  </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const streamId = urlParams.get("id");
-  const video = document.getElementById("videoPlayer");
+function getParam(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
 
-  if (!streamId) {
-    video.poster = "";
-    alert("No stream ID found!");
-    return;
+const mpd = getParam('mpd');
+const keyId = getParam('keyId');
+const key = getParam('key');
+
+document.addEventListener('DOMContentLoaded', async () => {
+  shaka.polyfill.installAll();
+  const video = document.querySelector('video');
+  const player = new shaka.Player(video);
+
+  // UI Setup
+  const container = document.querySelector('.shaka-video-container');
+  const ui = new shaka.ui.Overlay(player, container, video);
+  ui.configure({
+    controlPanelElements: ['play_pause','time_and_duration','mute','volume','spacer','quality','fullscreen']
+  });
+
+  player.addEventListener('error', e => console.error('Error:', e.detail));
+
+  try {
+    if (!mpd) {
+      alert('No MPD or stream URL found!');
+      return;
+    }
+
+    // Handle ClearKey DRM if present
+    if (keyId && key) {
+      player.configure({
+        drm: {
+          clearKeys: {
+            [keyId]: key
+          }
+        }
+      });
+    }
+
+    console.log('Loading:', mpd);
+    await player.load(mpd);
+    console.log('Stream loaded.');
+
+    // Autoplay attempt
+    video.muted = true;
+    await video.play().catch(() => {
+      document.getElementById('manualPlayButton').style.display = 'block';
+    });
+
+  } catch (err) {
+    console.error('Playback error:', err);
+    document.getElementById('manualPlayButton').style.display = 'block';
   }
 
-  fetch("https://raw.githubusercontent.com/Shubhamkur/Tv/refs/heads/main/tv")
-    .then(res => res.json())
-    .then(data => {
-      const stream = data.find(item => item.id === streamId);
-      if (!stream) {
-        alert("Stream not found!");
-        return;
-      }
-
-      let source = stream.mpd || stream.m3u8 || stream.mp4 || stream.url;
-
-      if (!source) {
-        alert("No playable URL found for this stream.");
-        return;
-      }
-
-      // Handle DASH (.mpd)
-      if (source.includes(".mpd")) {
-        if (dashjs.supportsMediaSource()) {
-          const player = dashjs.MediaPlayer().create();
-          player.initialize(video, source, true);
-          console.log("Playing DASH stream:", source);
-        } else {
-          alert("Your browser does not support DASH playback.");
-        }
-
-      // Handle HLS (.m3u8)
-      } else if (source.includes(".m3u8")) {
-        if (Hls.isSupported()) {
-          const hls = new Hls();
-          hls.loadSource(source);
-          hls.attachMedia(video);
-          console.log("Playing HLS stream:", source);
-        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-          video.src = source;
-        } else {
-          alert("Your browser does not support HLS playback.");
-        }
-
-      // Handle direct MP4 or other open format
-      } else {
-        video.src = source;
-        console.log("Playing direct stream:", source);
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Error loading stream data.");
-    });
+  // Manual play handler
+  document.getElementById('manualPlayButton').addEventListener('click', async () => {
+    try {
+      video.muted = false;
+      await video.play();
+      document.getElementById('manualPlayButton').style.display = 'none';
+    } catch (err) {
+      console.error('Manual play failed:', err);
+    }
+  });
 });
 </script>
-
 </body>
 </html>
