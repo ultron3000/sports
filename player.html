@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TV4WAP Live Player</title>
+<title>Premium Live Player</title>
 
 <!-- Shaka Player -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
@@ -45,7 +45,7 @@ function getParam(name) {
   return params.get(name);
 }
 
-const mpd = getParam('mpd');
+const videoUrl = getParam('video');
 const keyId = getParam('keyId');
 const key = getParam('key');
 
@@ -54,22 +54,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   const video = document.querySelector('video');
   const player = new shaka.Player(video);
 
-  // UI Setup
+  // Setup UI
   const container = document.querySelector('.shaka-video-container');
   const ui = new shaka.ui.Overlay(player, container, video);
   ui.configure({
-    controlPanelElements: ['play_pause','time_and_duration','mute','volume','spacer','quality','fullscreen']
+    controlPanelElements: [
+      'play_pause', 'time_and_duration', 'mute', 'volume',
+      'spacer', 'quality', 'fullscreen'
+    ]
   });
 
+  const manualPlay = document.getElementById('manualPlayButton');
   player.addEventListener('error', e => console.error('Error:', e.detail));
 
-  try {
-    if (!mpd) {
-      alert('No MPD or stream URL found!');
-      return;
-    }
+  if (!videoUrl) {
+    alert('No video URL found!');
+    return;
+  }
 
-    // Handle ClearKey DRM if present
+  try {
+    // DRM Support
     if (keyId && key) {
       player.configure({
         drm: {
@@ -80,27 +84,38 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
-    console.log('Loading:', mpd);
-    await player.load(mpd);
-    console.log('Stream loaded.');
+    console.log('Loading stream:', videoUrl);
+
+    // Detect stream type automatically
+    if (videoUrl.endsWith('.m3u8')) {
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = videoUrl;
+        await video.play().catch(() => manualPlay.style.display = 'block');
+      } else {
+        await player.load(videoUrl);
+      }
+    } else if (videoUrl.endsWith('.mpd')) {
+      await player.load(videoUrl);
+    } else {
+      // fallback (e.g. .txt link resolving to m3u8/mpd)
+      await player.load(videoUrl);
+    }
 
     // Autoplay attempt
     video.muted = true;
-    await video.play().catch(() => {
-      document.getElementById('manualPlayButton').style.display = 'block';
-    });
+    await video.play().catch(() => manualPlay.style.display = 'block');
 
   } catch (err) {
     console.error('Playback error:', err);
-    document.getElementById('manualPlayButton').style.display = 'block';
+    manualPlay.style.display = 'block';
   }
 
-  // Manual play handler
-  document.getElementById('manualPlayButton').addEventListener('click', async () => {
+  // Manual play button
+  manualPlay.addEventListener('click', async () => {
     try {
       video.muted = false;
       await video.play();
-      document.getElementById('manualPlayButton').style.display = 'none';
+      manualPlay.style.display = 'none';
     } catch (err) {
       console.error('Manual play failed:', err);
     }
