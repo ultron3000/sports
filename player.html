@@ -46,7 +46,7 @@ async function initPlayer() {
   let keyId = null, key = null;
 
   try {
-    // 1️⃣ Fetch data if ID exists
+    // 1️⃣ Fetch data from GitHub if ID provided
     if (id) {
       const res = await fetch('https://raw.githubusercontent.com/Shubhamkur/Tv/refs/heads/main/tv');
       const data = await res.json();
@@ -63,43 +63,19 @@ async function initPlayer() {
       return;
     }
 
-    // 2️⃣ Apply DRM key if available
+    // 2️⃣ Apply DRM if needed
     if (keyId && key) {
-      player.configure({
-        drm: { clearKeys: { [keyId]: key } }
-      });
+      player.configure({ drm: { clearKeys: { [keyId]: key } } });
     }
 
-    console.log('Attempting to load:', videoUrl);
-
-    // 3️⃣ Detect format
-    if (videoUrl.endsWith('.m3u8')) {
-      if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = videoUrl;
-      } else {
-        await player.load(videoUrl);
-      }
-    } else if (videoUrl.endsWith('.mpd')) {
-      await player.load(videoUrl);
-    } else {
-      // fallback: attempt load via shaka
-      await player.load(videoUrl);
-    }
-
-    // 4️⃣ Try autoplay
-    try {
-      video.muted = true;
-      await video.play();
-    } catch {
-      manualPlay.style.display = 'block';
-    }
+    console.log('Trying to load:', videoUrl);
+    await loadStream(videoUrl, player, video, manualPlay);
 
   } catch (err) {
-    console.error('Playback failed:', err);
+    console.error('Playback setup failed:', err);
     manualPlay.style.display = 'block';
   }
 
-  // Manual play handler
   manualPlay.addEventListener('click', async () => {
     try {
       video.muted = false;
@@ -109,6 +85,37 @@ async function initPlayer() {
       console.error('Manual play error:', e);
     }
   });
+}
+
+// 🧠 Smart loader with CORS fallback
+async function loadStream(url, player, video, manualPlay) {
+  try {
+    if (url.endsWith('.m3u8')) {
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url;
+        await video.play().catch(() => manualPlay.style.display = 'block');
+      } else {
+        await player.load(url);
+      }
+    } else if (url.endsWith('.mpd')) {
+      try {
+        await player.load(url);
+      } catch (err) {
+        console.warn('MPD load failed, retrying via proxy...', err);
+        const proxyUrl = 'https://cors.tv4proxy.workers.dev/?url=' + encodeURIComponent(url);
+        await player.load(proxyUrl);
+      }
+    } else {
+      // fallback for txt/other URLs
+      await player.load(url);
+    }
+
+    video.muted = true;
+    await video.play().catch(() => manualPlay.style.display = 'block');
+  } catch (error) {
+    console.error('Stream load failed:', error);
+    manualPlay.style.display = 'block';
+  }
 }
 
 document.addEventListener('DOMContentLoaded', initPlayer);
