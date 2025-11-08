@@ -3,133 +3,54 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TV4WAP Live Player</title>
+<title>TV4WAP Player</title>
 
-<!-- Shaka Player -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/controls.min.css">
 
 <style>
-  html, body {
-    margin: 0; padding: 0; height: 100%; width: 100%;
-    background: #000; overflow: hidden;
-  }
-  .shaka-video-container { width: 100%; height: 100%; position: absolute; }
-  video { width: 100%; height: 100%; object-fit: contain; background: #000; }
-  #manualPlayButton {
-    position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(255, 0, 0, 0.8);
-    color: #fff; padding: 15px 25px;
-    border-radius: 8px; cursor: pointer;
-    font-size: 18px; display: none;
-  }
-  #myLogo {
-    width: 60px; height: 40px;
-    position: absolute; right: 10px; top: 10px;
-    z-index: 1000;
-  }
+  html,body {margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden}
+  .shaka-video-container{position:absolute;width:100%;height:100%}
+  video{width:100%;height:100%;object-fit:contain;background:#000}
+  #manualPlayButton{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:rgba(255,0,0,0.8);color:#fff;padding:15px 25px;border-radius:8px;
+    cursor:pointer;font-size:18px;display:none;z-index:10}
+  #myLogo{width:60px;height:40px;position:absolute;right:10px;top:10px;z-index:5}
 </style>
 </head>
 
 <body>
-  <div class="shaka-video-container youtube-theme">
+  <div class="shaka-video-container">
     <video autoplay muted playsinline></video>
     <img id="myLogo" src="https://blogger.googleusercontent.com/img/a/AVvXsEiQ92h-ekVYskxW9qCgLvpQVMpAs4tqUQXnH9nDi37JW5B95V7Cq2Rz_mlGO68vTZmA2H5Qp4p8B0I9EUlW-6W1aVOZgITWN3xyE65Hd6G5G_D6HJFxiuXJaK-wMfYD0PiiUR9EBodkzuPH0-ubAMJQK_3F3rpDMEIJKCxlEzNZucpRzsumlBFXWqinGOw=s885">
     <div id="manualPlayButton">▶ Tap to Play</div>
   </div>
 
 <script>
-function getParam(name) {
-  const params = new URLSearchParams(window.location.search);
-  return params.get(name);
-}
-
-const id = getParam('id');
-const videoUrlParam = getParam('video');
-let videoUrl = videoUrlParam;
-
-document.addEventListener('DOMContentLoaded', async () => {
+async function initPlayer() {
   shaka.polyfill.installAll();
   const video = document.querySelector('video');
   const player = new shaka.Player(video);
-  const container = document.querySelector('.shaka-video-container');
-  const ui = new shaka.ui.Overlay(player, container, video);
+  const ui = new shaka.ui.Overlay(player, document.querySelector('.shaka-video-container'), video);
   const manualPlay = document.getElementById('manualPlayButton');
 
   ui.configure({
-    controlPanelElements: [
-      'play_pause', 'time_and_duration', 'mute', 'volume', 'spacer', 'quality', 'fullscreen'
-    ]
+    controlPanelElements: ['play_pause','time_and_duration','mute','volume','spacer','quality','fullscreen']
   });
 
-  player.addEventListener('error', e => console.error('Shaka error:', e.detail));
+  player.addEventListener('error', e => console.error('Error:', e.detail));
+
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  let videoUrl = params.get('video');
+  let keyId = null, key = null;
 
   try {
-    // Step 1: Fetch channel info from GitHub if ID present
+    // 1️⃣ Fetch data if ID exists
     if (id) {
       const res = await fetch('https://raw.githubusercontent.com/Shubhamkur/Tv/refs/heads/main/tv');
-      const channels = await res.json();
-      const streamInfo = channels.find(ch => ch.id === id);
-
-      if (streamInfo) {
-        if (streamInfo.mpd) {
-          videoUrl = streamInfo.mpd;
-        } else if (streamInfo.m3u8) {
-          videoUrl = streamInfo.m3u8;
-        }
-
-        if (streamInfo.key) {
-          const [keyId, key] = streamInfo.key.split(':');
-          player.configure({
-            drm: {
-              clearKeys: { [keyId]: key }
-            }
-          });
-        }
-      }
-    }
-
-    if (!videoUrl) {
-      alert('No video URL found.');
-      return;
-    }
-
-    console.log('Loading stream:', videoUrl);
-
-    // Step 2: Auto-detect stream type
-    if (videoUrl.endsWith('.m3u8')) {
-      if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = videoUrl;
-        await video.play().catch(() => manualPlay.style.display = 'block');
-      } else {
-        await player.load(videoUrl);
-      }
-    } else if (videoUrl.endsWith('.mpd')) {
-      await player.load(videoUrl);
-    } else {
-      await player.load(videoUrl);
-    }
-
-    // Step 3: Autoplay
-    video.muted = true;
-    await video.play().catch(() => manualPlay.style.display = 'block');
-
-  } catch (err) {
-    console.error('Playback error:', err);
-    manualPlay.style.display = 'block';
-  }
-
-  manualPlay.addEventListener('click', async () => {
-    try {
-      video.muted = false;
-      await video.play();
-      manualPlay.style.display = 'none';
-    } catch (err) {
-      console.error('Manual play failed:', err);
-    }
-  });
-});
-</script>
-</body>
-</html>
+      const data = await res.json();
+      const match = data.find(i => i.id === id);
+      if (match) {
+        if (match.mpd) videoUrl = match.mpd;
+        if (mat
