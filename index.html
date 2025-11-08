@@ -527,7 +527,7 @@
         
         // Add click event to play the channel
         channelCard.addEventListener('click', () => {
-          const url = `test.html?title=${encodeURIComponent(channel.title)}&video=${encodeURIComponent(channel.video)}`;
+          const url = `player.html?title=${encodeURIComponent(channel.title)}&video=${encodeURIComponent(channel.video)}`;
           window.location.href = url;
         });
         
