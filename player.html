@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Premium Live Player</title>
+<title>TV4WAP Live Player</title>
 
 <!-- Shaka Player -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.6.0/shaka-player.ui.min.js"></script>
@@ -45,48 +45,59 @@ function getParam(name) {
   return params.get(name);
 }
 
-const videoUrl = getParam('video');
-const keyId = getParam('keyId');
-const key = getParam('key');
+const id = getParam('id');
+const videoUrlParam = getParam('video');
+let videoUrl = videoUrlParam;
 
 document.addEventListener('DOMContentLoaded', async () => {
   shaka.polyfill.installAll();
   const video = document.querySelector('video');
   const player = new shaka.Player(video);
-
-  // Setup UI
   const container = document.querySelector('.shaka-video-container');
   const ui = new shaka.ui.Overlay(player, container, video);
+  const manualPlay = document.getElementById('manualPlayButton');
+
   ui.configure({
     controlPanelElements: [
-      'play_pause', 'time_and_duration', 'mute', 'volume',
-      'spacer', 'quality', 'fullscreen'
+      'play_pause', 'time_and_duration', 'mute', 'volume', 'spacer', 'quality', 'fullscreen'
     ]
   });
 
-  const manualPlay = document.getElementById('manualPlayButton');
-  player.addEventListener('error', e => console.error('Error:', e.detail));
-
-  if (!videoUrl) {
-    alert('No video URL found!');
-    return;
-  }
+  player.addEventListener('error', e => console.error('Shaka error:', e.detail));
 
   try {
-    // DRM Support
-    if (keyId && key) {
-      player.configure({
-        drm: {
-          clearKeys: {
-            [keyId]: key
-          }
+    // Step 1: Fetch channel info from GitHub if ID present
+    if (id) {
+      const res = await fetch('https://raw.githubusercontent.com/Shubhamkur/Tv/refs/heads/main/tv');
+      const channels = await res.json();
+      const streamInfo = channels.find(ch => ch.id === id);
+
+      if (streamInfo) {
+        if (streamInfo.mpd) {
+          videoUrl = streamInfo.mpd;
+        } else if (streamInfo.m3u8) {
+          videoUrl = streamInfo.m3u8;
         }
-      });
+
+        if (streamInfo.key) {
+          const [keyId, key] = streamInfo.key.split(':');
+          player.configure({
+            drm: {
+              clearKeys: { [keyId]: key }
+            }
+          });
+        }
+      }
+    }
+
+    if (!videoUrl) {
+      alert('No video URL found.');
+      return;
     }
 
     console.log('Loading stream:', videoUrl);
 
-    // Detect stream type automatically
+    // Step 2: Auto-detect stream type
     if (videoUrl.endsWith('.m3u8')) {
       if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = videoUrl;
@@ -97,11 +108,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else if (videoUrl.endsWith('.mpd')) {
       await player.load(videoUrl);
     } else {
-      // fallback (e.g. .txt link resolving to m3u8/mpd)
       await player.load(videoUrl);
     }
 
-    // Autoplay attempt
+    // Step 3: Autoplay
     video.muted = true;
     await video.play().catch(() => manualPlay.style.display = 'block');
 
@@ -110,7 +120,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     manualPlay.style.display = 'block';
   }
 
-  // Manual play button
   manualPlay.addEventListener('click', async () => {
     try {
       video.muted = false;
