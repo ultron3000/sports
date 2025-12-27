@@ -548,6 +548,12 @@
     image: "https://cdn.oxolive.com/wp-content/uploads/2025/09/ChatGPT-Image-Oct-17-2025-09_28_44-PM-1-185x278.png",
     category: "football",
   },
+   {
+    title: "Sky Sports 4",
+    video: "https://ballcontrol.click/events/tracker2/",
+    image: "https://www.edgagolf.com/eagle3/wp-content/uploads/2015/12/Screen-Shot-2015-12-15-at-13.54.46.png",
+    category: "football",
+  },
   {
     title: "Geo Super",
     video: "https://anywhere.pwisetthon.com/https://ml-pull-dvc-myco.io:2096/GEO_SUPER/index.m3u8",
@@ -1425,6 +1431,15 @@ if (movie.id && !movie.video) {
     if (!v) { window.location.href = `player.html?title=${encodeURIComponent(movie.title||'')}&video=${encodeURIComponent(src||'')}`; return; }
     v.src = src;
     v.play().catch(()=>{});
+    playPauseBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>Pause';
+    return;
+  }
+
+    if (src === 'https://ballcontrol.click/events/tracker2/' || src === 'https://streams.center/embed/ch2.php') {
+    // Custom handling for these URLs
+    playerWrapper.innerHTML = `
+      <iframe src="${src}" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen style="width:100%;height:100%;background:#000"></iframe>
+    `;
     playPauseBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>Pause';
     return;
   }
