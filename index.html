@@ -472,6 +472,22 @@
     isPopular: true
   },
   {
+    title: "Star Sports 1 HD",
+    video: "https://waptv.wapka.xyz/index.html",
+    image: "https://cdn.smartads.in/images/product/television/Star-Sports-1-Hindi-HD.png",
+    category: "cricket",
+    language: "Hindi",
+    isPopular: true
+  },
+  {
+    title: "Star Sports 2 HD",
+    video: "https://tv4wab.pages.dev/?id=1984&name=jspo",
+    image: "https://cdn.smartads.in/images/product/television/STAR-Sports-2.png",
+    category: "cricket",
+    language: "Hindi",
+    isPopular: true
+  },
+  {
     title: "T-Sports HD",
     video: "https://satoshi-cors.herokuapp.com/http://103.96.235.18:9090/sports1/index.m3u8",
     image: "https://yt3.googleusercontent.com/eY6Yt0YDmWSheMmneYNjUD_2N5p8r2nFca9CENifrZ9TugWxrQW24oznjqBJPOFmSs2M6avemg=s900-c-k-c0x00ffffff-no-rj",
@@ -1414,6 +1430,26 @@ if (movie.id && !movie.video) {
     playPauseBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>Pause';
     return;
   }
+
+      /******************************
+   * 🌐 FORCE OPEN NORMAL WEB LINKS IN IFRAME
+   ******************************/
+  if (lc.includes('waptv.wapka.xyz') || lc.includes('tv4wab.pages.dev')) {
+    playerWrapper.innerHTML = `
+      <iframe 
+        src="${src}" 
+        width="100%" 
+        height="100%" 
+        frameborder="0" 
+        allowfullscreen 
+        allow="autoplay; encrypted-media"
+        style="background:#000">
+      </iframe>
+    `;
+    playPauseBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>Pause';
+    return; // ⛔ STOP HERE
+  }
+
 
   // youtube
   if (isYouTube(src)) {
