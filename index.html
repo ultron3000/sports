@@ -481,10 +481,18 @@
   },
   {
     title: "Star Sports 2 HD",
-    video: "https://tv4wab.pages.dev/?id=1984&name=jspo",
+    video: "https://24spn-webhost8.blogspot.com/?m=1",
     image: "https://cdn.smartads.in/images/product/television/STAR-Sports-2.png",
     category: "cricket",
     language: "Hindi",
+    isPopular: true
+  },
+  {
+    title: "Sky Sports cricket",
+    video: "https://crichd.workspace-sultanarabi161.workers.dev/live/skyscric.m3u8",
+    image: "https://upload.wikimedia.org/wikipedia/commons/0/0e/Sky-sports-main-cricket.jpg",
+    category: "cricket",
+    language: "English",
     isPopular: true
   },
   {
@@ -1432,23 +1440,28 @@ if (movie.id && !movie.video) {
   }
 
       /******************************
-   * 🌐 FORCE OPEN NORMAL WEB LINKS IN IFRAME
-   ******************************/
-  if (lc.includes('waptv.wapka.xyz') || lc.includes('tv4wab.pages.dev')) {
-    playerWrapper.innerHTML = `
-      <iframe 
-        src="${src}" 
-        width="100%" 
-        height="100%" 
-        frameborder="0" 
-        allowfullscreen 
-        allow="autoplay; encrypted-media"
-        style="background:#000">
-      </iframe>
-    `;
-    playPauseBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>Pause';
-    return; // ⛔ STOP HERE
-  }
+ * 🌐 FORCE OPEN NORMAL WEB LINKS IN IFRAME
+ ******************************/
+if (
+  lc.includes('waptv.wapka.xyz') || 
+  lc.includes('tv4wab.pages.dev') || 
+  lc.includes('24spn-webhost8.blogspot.com')
+) {
+  playerWrapper.innerHTML = `
+    <iframe 
+      src="${src}" 
+      width="100%" 
+      height="100%" 
+      frameborder="0" 
+      allowfullscreen 
+      allow="autoplay; encrypted-media"
+      style="background:#000">
+    </iframe>
+  `;
+  playPauseBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>Pause';
+  return; // ⛔ STOP HERE
+}
+
 
 
   // youtube
