@@ -520,6 +520,14 @@
     isPopular: true
   },
   {
+    title: "Star Sports Khel",
+    video: "https://jiogo.pages.dev/?id=1998",
+    image: "https://indiantvinfo.com/media/schema-and-structured-data-for-wp/Star-Sports-Khel-720x720.jpg",
+    category: "cricket",
+    language: "Hindi",
+    isPopular: true
+  },
+  {
     title: "T-Sports HD",
     video: "https://satoshi-cors.herokuapp.com/http://103.96.235.18:9090/sports1/index.m3u8",
     image: "https://yt3.googleusercontent.com/eY6Yt0YDmWSheMmneYNjUD_2N5p8r2nFca9CENifrZ9TugWxrQW24oznjqBJPOFmSs2M6avemg=s900-c-k-c0x00ffffff-no-rj",
@@ -1469,7 +1477,8 @@ if (movie.id && !movie.video) {
 if (
   lc.includes('waptv.wapka.xyz') || 
   lc.includes('tv4wab.pages.dev') || 
-  lc.includes('24spn-webhost8.blogspot.com')
+  lc.includes('24spn-webhost8.blogspot.com') ||
+  lc.includes('jiogo.pages.dev')   // ✅ Added this line
 ) {
   playerWrapper.innerHTML = `
     <iframe 
@@ -1485,6 +1494,7 @@ if (
   playPauseBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>Pause';
   return; // ⛔ STOP HERE
 }
+
 
 
 
